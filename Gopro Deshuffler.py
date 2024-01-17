@@ -13,9 +13,11 @@ args = parser.parse_args()
 
 def is_linear(in_list:list):
   for i in range(0, len(in_list)-1):
+
     # print(f'\niteration {i}, list len: {len(in_list)}')
     # print(f'comparing {str(int(in_list[i])+1)} and {str(int(in_list[i+1]))}')
     # print(int(in_list[i])+1 != int(in_list[i+1]))
+
     if int(in_list[i])+1 != int(in_list[i+1]):
       return False
     i+=1
@@ -42,11 +44,12 @@ except Exception as e:
 file = os.path.normpath(args.input)
 if not os.path.exists(file):
   print("Unable to find file " + str(file))
-  sys.exit(2) # ENABLE THIS
+  sys.exit(2)
 
 print(f"Beginning deshuffle for file {file} from {timestamp_str}! Sending the attempt outputs into folder: /deshuffling_attempts/",)
 if not os.path.exists("deshuffling_attempts"):
   os.makedirs("deshuffling_attempts")
+
 index = 1
 if args.count:
   sequence = list(map(lambda v : str(v), range(0, int(args.count))))
@@ -86,21 +89,6 @@ with open(os.devnull, 'wb') as DEVNULL:
       input("Done. Waiting for next pass...")
     else:
       input("Done! Press any key to exit.")
-
-# while(True):
-#   try:
-#     user_input = int(input("Please enter index of file you're needing to deshuffle\n>>")) -1
-#     if(user_input < len(videos) and user_input > 0):
-#       print("Looks good. File chosen: " + videos[user_input])
-#     break
-#   except Exception as e:
-#     print("Error: " + e)
-#     continue
-
-# while(True):
-#   try:
-#     time_format = '%H:%M:%S.fff'
-#     timestamp = datetime.datetime.strptime(input("Please enter the timestamp on the first moved/shuffled frame after the freeze\n(mpv timestamp <" + time_format + ">)\n>>"), time_format)
-#     print("Success! Time at " + timestamp.strftime(time_format))
-#   except Exception as e:
-#     print("There was an error parsing that timestamp.", e)
+      break
+    
+sys.exit()
