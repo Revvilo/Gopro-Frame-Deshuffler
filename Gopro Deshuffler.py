@@ -3,13 +3,25 @@ import glob, datetime, subprocess, time
 
 batch_size = 8
 
-parser = argparse.ArgumentParser(description="Help msg",
+parser = argparse.ArgumentParser(description="Brute forces deshuffling of glitched out GoPro videos.",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-i", "--input", help="video to deshuffle", required=True)
 parser.add_argument("-t", "--timestamp", help="timestamp of frame to begin deshuffling from", required=True)
 parser.add_argument("-c", "--count", help="number of frames to start shuffling with", required=False)
 parser.add_argument("-r", "--recurse", help="add a number to the frame sequence and run it all again", required=False)
+parser.add_argument("-j", "--join", help="join all existing attempts together", action='store_true')
 args = parser.parse_args()
+
+def join_all(in_list:list, batch = 2):
+  # all_outputs = list.sort(glob.glob("deshuffling_attempts/*.mp4"))
+  all_outputs = in_list
+  joining_filter = ""
+  for i in range(0, len(all_outputs)-1):
+    joining_filter = joining_filter + f"[{i}:v] [{i}:a] "
+  joining_filter = joining_filter + f"concat=n={len(all_outputs)}:v=1:a=1 [v] [a]"
+  # Don't ask. I did batch-2 as a quick hack. Changing the index above can break things
+  subprocess.call(f"ffmpeg -i {' -i '.join(all_outputs)} -filter_complex \"{joining_filter}\" -map \"[v]\" -map \"[a]\" -nostats -progress ./deshuffling_attempts/batch-{batch-2}.mp4 -y")
+
 
 def is_linear(in_list:list):
   for i in range(0, len(in_list)-1):
@@ -46,6 +58,12 @@ if not os.path.exists(file):
   print("Unable to find file " + str(file))
   sys.exit(2)
 
+if args.join:
+  print("Join (-j) was passed. Only joining existing deshuffling attempts in /deshuffling_attempts/...")
+  join_all(sorted(glob.glob("deshuffling_attempts\*.mp4")))
+  print("Done!")
+  sys.exit()
+
 print(f"Beginning deshuffle for file {file} from {timestamp_str}! Sending the attempt outputs into folder: /deshuffling_attempts/",)
 if not os.path.exists("deshuffling_attempts"):
   os.makedirs("deshuffling_attempts")
@@ -65,7 +83,7 @@ with open(os.devnull, 'wb') as DEVNULL:
         print(f'{" ".join(permutation)} is linear. Skipping.')
         continue
       print(f'Trying {" ".join(permutation)} as [{iteration_try_count}]')
-      command = f"ffmpeg -ss {timestamp_str} -t 1s -i {file} -vf \"shuffleframes={' '.join(permutation)}\" -c:v h264 ./deshuffling_attempts/{os.path.splitext(file)[0]}-unshuffled[{iteration_try_count}].mp4 -y"
+      command = f"ffmpeg -ss {timestamp_str} -t 1s -i {file} -vf \"shuffleframes={' '.join(permutation)}\" -c:v h264 ./deshuffling_attempts/{os.path.splitext(file)[0]}-attempt-{iteration_try_count}-[{''.join(permutation)}].mp4 -y"
       # print(command)
       # subprocess.call(command)
       if iteration_try_count % batch_size:
@@ -77,14 +95,10 @@ with open(os.devnull, 'wb') as DEVNULL:
       iteration_try_count = iteration_try_count + 1
     index = index + 1
     sequence.append(str(index))
+
     print("Joining all of them together...")
-    all_outputs = list.sort(glob.glob("deshuffling_attempts/*.mp4"))
-    joining_filter = ""
-    for i in range(0, len(all_outputs)-1):
-      joining_filter = joining_filter + f"[{i}:v] [{i}:a] "
-    joining_filter = joining_filter + f"concat=n={len(all_outputs)}:v=1:a=1 [v] [a]"
-    # Don't ask. I did index-2 as a quick hack. Changing the index above can break things
-    subprocess.call(f"ffmpeg -i {' -i '.join(all_outputs)} -filter_complex \"{joining_filter}\" -map \"[v]\" -map \"[a]\" ./deshuffling_attempts/batch-{index-2}.mp4 -y -progress -nostats", stdout=DEVNULL, stderr=subprocess.STDOUT)
+    join_all(sorted(glob.glob(".\deshuffling_attempts\*.mp4")), index)
+
     if args.recurse:
       input("Done. Waiting for next pass...")
     else:
