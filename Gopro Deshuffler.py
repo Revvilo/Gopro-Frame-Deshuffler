@@ -136,7 +136,8 @@ with open(os.devnull, 'wb') as DEVNULL:
 
     if args.recurse:
       input("Done. Waiting for next pass...")
-    elif not do_permute:
+    elif do_permute:
+      # Did this to hold the command window to refer to the indexes and stuff
       input("Done! Press any key to exit.")
       break
     
